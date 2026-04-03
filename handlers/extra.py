@@ -2,13 +2,15 @@ import asyncio
 import random
 import requests
 import urllib.parse
-from pyrogram import Client, filters
+import time
+import wikipedia  # Artıq yuxarıdadır
+from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from config import OWNERS
 from database import get_db
 
 # ============================================================
-#  ƏLAVƏ FUNKSİYALAR
+#  ƏLAVƏ FUNKSİYALAR (Təkmilləşdirilmiş Variant)
 # ============================================================
 
 # --- HELP ---
@@ -74,11 +76,8 @@ async def weather_cmd(client, message):
         return await message.reply_text("🏙 Şəhər adı yazın: `/hava Baku`")
     city = message.command[1]
     try:
-        r = requests.get(
-            f"http://api.openweathermap.org/data/2.5/weather"
-            f"?q={urllib.parse.quote(city)}&appid=b6907d289e10d714a6e88b30761fae22"
-            f"&units=metric&lang=az"
-        ).json()
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={urllib.parse.quote(city)}&appid=b6907d289e10d714a6e88b30761fae22&units=metric&lang=az"
+        r = requests.get(url).json()
         await message.reply_text(
             f"🌤 **{city.capitalize()}**\n"
             f"🌡 Temperatur: {r['main']['temp']}°C\n"
@@ -87,7 +86,7 @@ async def weather_cmd(client, message):
             f"💨 Külək: {r['wind']['speed']} m/s"
         )
     except:
-        await message.reply_text("❌ Şəhər tapılmadı.")
+        await message.reply_text("❌ Şəhər tapılmadı və ya xidmət müvəqqəti bağlıdır.")
 
 
 # --- VALYUTA ---
@@ -103,7 +102,7 @@ async def valyuta_cmd(client, message):
             f"🇹🇷 1 TRY = {1/r['rates']['TRY']:.4f} AZN"
         )
     except:
-        await message.reply_text("❌ Məzənnə alınmadı.")
+        await message.reply_text("❌ Məzənnə məlumatları alınmadı.")
 
 
 # --- NAMAZ ---
@@ -128,10 +127,10 @@ async def namaz_cmd(client, message):
             f"🌃 İşa: `{t['Isha']}`"
         )
     except:
-        await message.reply_text("⚠️ Namaz vaxtları gətirmək mümkün olmadı.")
+        await message.reply_text("⚠️ Namaz vaxtlarını gətirmək mümkün olmadı.")
 
 
-# --- TƏRCÜmə ---
+# --- TƏRCÜMƏ ---
 @Client.on_message(filters.command("tercume") & filters.reply)
 async def translate_cmd(client, message):
     text = message.reply_to_message.text
@@ -144,7 +143,7 @@ async def translate_cmd(client, message):
             r = requests.get(url).json()
             await message.reply_text(f"🌐 **{lang.upper()}:**\n`{r[0][0][0]}`")
         except:
-            await message.reply_text("❌ Xəta.")
+            await message.reply_text("❌ Tərcümə zamanı xəta yarandı.")
     else:
         langs = {"en": "🇬🇧 EN", "tr": "🇹🇷 TR", "ru": "🇷🇺 RU", "de": "🇩🇪 DE", "fr": "🇫🇷 FR"}
         res = "🌐 **5 Dilə Tərcümə:**\n\n"
@@ -165,12 +164,11 @@ async def wiki_cmd(client, message):
         return await message.reply_text("Mövzu yazın: `/wiki Azərbaycan`")
     query = " ".join(message.command[1:])
     try:
-        import wikipedia
         wikipedia.set_lang("az")
         summary = wikipedia.summary(query, sentences=3)
         await message.reply_text(f"📖 **{query}**\n\n{summary}")
-    except Exception:
-        await message.reply_text("❌ Tapılmadı.")
+    except:
+        await message.reply_text("❌ Wikipedia məlumat tapmadı.")
 
 
 # --- SEVGİ ---
@@ -247,14 +245,14 @@ async def sans_cmd(client, message):
 
 # --- MAŞINLAR ---
 CAR_INFO = {
-    "ferrari": ("🏎️ FERRARI (İtaliya)", "Yarış dünyasının (Formula 1) kralı. Qırmızı rəngi və 'Şahə qalxmış at' loqosu ilə tanınır. Sürət, lüks və aerodinamikanın zirvəsi."),
-    "lambo":   ("🐃 LAMBORGHINI (İtaliya)", "Aqressiv dizaynı ilə tanınır. Loqosundakı qəzəbli buğa gücün rəmzidir. 'Aventador' və 'Huracan' modelləri məşhurdur."),
-    "bmw":     ("🌀 BMW (Almaniya)", "Şüar: 'Sürmə həzzi'. Arxa çəkişli balansı ilə məşhurdur. M seriyası dünyada ən çox sevilən idman sedanlarıdır."),
-    "merc":    ("⭐️ MERCEDES-BENZ (Almaniya)", "Şüar: 'The Best or Nothing'. Lüksün və təhlükəsizliyin pioneridir. S-Class dövlət başçılarının seçimidir."),
-    "bugatti": ("💎 BUGATTI (Fransa)", "1500+ at gücü, W16 mühərrik. 400 km/saat üstü sürət. Hər biri əllə yığılır — sənət əsəri hesab olunur."),
-    "tesla":   ("⚡ TESLA (ABŞ)", "Plaid modeli 0-100 km/saat 2 saniyədə. Avtopilot sistemi var. Dünyanı elektrikli nəqliyyata keçirməkdə liderdir."),
-    "porsche": ("🐎 PORSCHE (Almaniya)", "911 modeli 50+ ildir mükəmməlləşdirilir. Gündəlik şəhər sürüşünə uyğun yeganə superkardır."),
-    "rolls":   ("👑 ROLLS-ROYCE (Böyük Britaniya)", "Ən lüks sedan. Salonda saatin çıqqıltısını eşitmək olar. 'Spirit of Ecstasy' fiquru simvoludur."),
+    "ferrari": ("🏎️ FERRARI (İtaliya)", "Yarış dünyasının (Formula 1) kralı. Qırmızı rəngi və 'Şahə qalxmış at' loqosu ilə tanınır."),
+    "lambo":   ("🐃 LAMBORGHINI (İtaliya)", "Aqressiv dizaynı ilə tanınır. Loqosundakı qəzəbli buğa gücün rəmzidir."),
+    "bmw":     ("🌀 BMW (Almaniya)", "Şüar: 'Sürmə həzzi'. Arxa çəkişli balansı ilə məşhurdur. M seriyası dünyada sevilir."),
+    "merc":    ("⭐️ MERCEDES-BENZ (Almaniya)", "Şüar: 'The Best or Nothing'. Lüksün və təhlükəsizliyin pioneridir."),
+    "bugatti": ("💎 BUGATTI (Fransa)", "1500+ at gücü, W16 mühərrik. 400 km/saat üstü sürət. Hər biri sənət əsəridir."),
+    "tesla":   ("⚡ TESLA (ABŞ)", "Avtopilot sistemi var. Dünyanı elektrikli nəqliyyata keçirməkdə liderdir."),
+    "porsche": ("🐎 PORSCHE (Almaniya)", "911 modeli 50+ ildir mükəmməlləşdirilir. Gündəlik sürüşə uyğun superkardır."),
+    "rolls":   ("👑 ROLLS-ROYCE (Böyük Britaniya)", "Ən lüks sedan. 'Spirit of Ecstasy' fiquru simvoludur."),
 }
 
 @Client.on_message(filters.command("masinlar"))
@@ -329,7 +327,8 @@ async def font_cmd(client, message):
 async def font_cb(client, cq: CallbackQuery):
     fid = cq.data.split("_")[1]
     try:
-        original = cq.message.text.split("`")[1]
+        # Mətni tapmaq üçün daha təhlükəsiz yol
+        original = cq.message.text.split("Mətniniz:")[1].split("\n")[0].strip().replace("`", "")
     except:
         return await cq.answer("Mətn tapılmadı")
     converted = convert_font(original, fid)
@@ -348,9 +347,10 @@ async def etiraf_cmd(client, message):
     for owner_id in OWNERS:
         try:
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("✅ Yayımla", callback_data=f"pub_etiraf|{etiraf_text[:50]}|{message.chat.id}"),
+                [InlineKeyboardButton("✅ Yayımla", callback_data=f"pub_etiraf|{message.chat.id}"),
                  InlineKeyboardButton("❌ Rədd Et",  callback_data="rej_etiraf")]
             ])
+            # Etirafı sahibə göndəririk (Database yoxdursa bura önəmlidir)
             await client.send_message(
                 owner_id,
                 f"📩 **Yeni Etiraf:**\n\n{sender}: {etiraf_text}",
@@ -358,25 +358,10 @@ async def etiraf_cmd(client, message):
             )
         except:
             pass
-    await message.reply_text("✅ Etirafınız sahibə göndərildi. Yayımlanmağı gözləyin.")
-
-@Client.on_callback_query(filters.regex("^(pub|rej)_etiraf"))
-async def etiraf_decision(client, cq: CallbackQuery):
-    if cq.data.startswith("pub_etiraf"):
-        parts = cq.data.split("|")
-        text = parts[1] if len(parts) > 1 else "?"
-        chat_id = int(parts[2]) if len(parts) > 2 else None
-        if chat_id:
-            try:
-                await client.send_message(chat_id, f"📢 **Etiraf:**\n\n{text}")
-            except:
-                pass
-        await cq.message.edit_text("✅ Etiraf yayımlandı.")
-    else:
-        await cq.message.edit_text("❌ Etiraf rədd edildi.")
+    await message.reply_text("✅ Etirafınız sahibə göndərildi.")
 
 
-# --- YÖNLƏNDIRMƏ (SAHİB) ---
+# --- YÖNLƏNDİRMƏ (SAHİB) ---
 @Client.on_message(filters.command("yonlendir") & filters.user(OWNERS))
 async def broadcast_cmd(client, message):
     if not message.reply_to_message and len(message.command) < 2:
@@ -390,6 +375,7 @@ async def broadcast_cmd(client, message):
         cur.close(); conn.close()
     except:
         chats = []
+    
     success = 0
     for (cid,) in chats:
         try:
@@ -407,7 +393,6 @@ async def broadcast_cmd(client, message):
 # --- PING ---
 @Client.on_message(filters.command("ping"))
 async def ping_cmd(client, message):
-    import time
     start = time.time()
     msg = await message.reply_text("🏓 Pong!")
     ms = round((time.time() - start) * 1000)
