@@ -1,65 +1,74 @@
-import re
-import os
-from pyrogram import filters
-from dotenv import load_dotenv
+import asyncio
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+# Config-dən yalnız lazım olan tək dəyişənləri çağırırıq
+from config import OWNER_LINK, CHANNEL_LINK, SUPPORT_LINK, START_PIC
+from database import get_db
 
-load_dotenv()
+@Client.on_message(filters.command("start"))
+async def start_cmd(client, message):
+    user = message.from_user
+    
+    # Database qeydiyyatı
+    try:
+        conn = get_db()
+        if conn:
+            cur = conn.cursor()
+            cur.execute("INSERT INTO broadcast_list (chat_id) VALUES (%s) ON CONFLICT DO NOTHING", (message.chat.id,))
+            conn.commit()
+            cur.close()
+            conn.close()
+    except:
+        pass
 
-# ── ƏSAS ──────────────────────────────────────────────
-API_ID        = int(os.getenv("API_ID", 0))
-API_HASH      = os.getenv("API_HASH", "")
-BOT_TOKEN     = os.getenv("BOT_TOKEN", "")
+    # İstədiyin o animasiya hissəsi (Qaldı)
+    frames = ["⏳", "⏳ ʏüᴋʟəɴɪʀ...", "⏳ ██", "⏳ ████", "✅ ʜᴀᴢɪʀᴅɪʀ!"]
+    anim = await message.reply_text(frames[0])
+    for f in frames[1:]:
+        await asyncio.sleep(0.35)
+        await anim.edit_text(f)
+    await asyncio.sleep(0.2)
+    await anim.delete()
 
-# ── SAHİB ─────────────────────────────────────────────
-OWNER_ID      = int(os.getenv("OWNER_ID", 0))
-OWNER_IDS_STR = os.getenv("OWNER_IDS", str(OWNER_ID))
-OWNERS        = [int(x.strip()) for x in OWNER_IDS_STR.split(",") if x.strip()]
+    bot_me = await client.get_me()
+    caption = (
+        f"✨ **sᴀʟᴀᴍ, {user.first_name}!**\n\n"
+        "╔══════════════════╗\n"
+        "  🤖 **ʜᴛ ᴜɴɪᴠᴇʀsᴀʟ ʙᴏᴛ**\n"
+        "╚══════════════════╝\n\n"
+        "🏷 **Tağ** • 🎮 **Oyunlar** • 🎵 **Musiqi**\n"
+        "🎧 **Səsli Söhbət** • 🛡 **Moderator** • 🤖 **AI**\n\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "📌 **Bütün funksiyalar bir botda!**"
+    )
 
-# ── LİNKLƏR ───────────────────────────────────────────
-OWNER_LINK    = os.getenv("OWNER_LINK",   "https://t.me/username")
-CHANNEL_LINK  = os.getenv("CHANNEL_LINK", "https://t.me/HT_bots")
-SUPPORT_CHAT  = os.getenv("SUPPORT_CHAT", "https://t.me/ht_bots_chat")
-SUPPORT_CHANNEL = os.getenv("SUPPORT_CHANNEL", "https://t.me/HT_bots")
+    # Linkləri təmizlədik: SUPPORT_CHAT və digər təkrarlar silindi
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🏷 Tağ Sistemi",    callback_data="info_tag"),
+         InlineKeyboardButton("🎮 Oyunlar",        callback_data="info_games")],
+        [InlineKeyboardButton("🎵 Media Yüklə",   callback_data="info_music"),
+         InlineKeyboardButton("🎧 Səsli Söhbət",  callback_data="info_vc")],
+        [InlineKeyboardButton("🛡 Moderator",      callback_data="info_mod"),
+         InlineKeyboardButton("🤖 AI Chatbot",     callback_data="info_ai")],
+        [InlineKeyboardButton("🔧 Digər",          callback_data="info_other")],
+        [InlineKeyboardButton("➕ Məni Qrupa Əlavə Et",
+                              url=f"https://t.me/{bot_me.username}?startgroup=true")],
+        [InlineKeyboardButton("👨‍💻 Sahibi",  url=OWNER_LINK),
+         InlineKeyboardButton("📢 Kanal",   url=CHANNEL_LINK)],
+        [InlineKeyboardButton("💬 Dəstək Qrupu", url=SUPPORT_LINK)],
+    ])
 
-# ── MUSİQİ BOTU ───────────────────────────────────────
-# STRING_SESSION: @StringFatherBot-dan al (User account üçün)
-STRING1       = os.getenv("STRING_SESSION",  None)
-STRING2       = os.getenv("STRING_SESSION2", None)
-STRING3       = os.getenv("STRING_SESSION3", None)
-
-MONGO_DB_URI  = os.getenv("MONGO_DB_URI", None)
-LOGGER_ID     = int(os.getenv("LOGGER_ID", 0))
-
-DURATION_LIMIT_MIN  = int(os.getenv("DURATION_LIMIT", 600))
-PLAYLIST_FETCH_LIMIT = int(os.getenv("PLAYLIST_FETCH_LIMIT", 25))
-
-TG_AUDIO_FILESIZE_LIMIT = int(os.getenv("TG_AUDIO_FILESIZE_LIMIT", 104857600))
-TG_VIDEO_FILESIZE_LIMIT = int(os.getenv("TG_VIDEO_FILESIZE_LIMIT", 1073741824))
-
-SPOTIFY_CLIENT_ID     = os.getenv("SPOTIFY_CLIENT_ID", None)
-SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", None)
-
-# ── DOWNLOADER ────────────────────────────────────────
-COOKIE_URL    = os.getenv("COOKIE_URL", "")
-
-# ── AI ────────────────────────────────────────────────
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-
-# ── GÖRÜNTÜ ───────────────────────────────────────────
-START_PIC      = os.getenv("START_PIC", "https://i.postimg.cc/mDTTvtxS/20260214-163714.jpg")
-START_STICKER  = os.getenv("START_STICKER", "CAACAgQAAxkBAAEQhcppkc-7kbd_oDn4S9MV6T5vv-TL9AACQhgAAiRYeVGtiXa89ZuMAzoE")
-
-YOUTUBE_IMG_URL  = os.getenv("YOUTUBE_IMG_URL",  "https://i.postimg.cc/mDTTvtxS/20260214-163714.jpg")
-STREAM_IMG_URL   = os.getenv("STREAM_IMG_URL",   "https://files.catbox.moe/kvfeip.jpg")
-TELEGRAM_IMG_URL = os.getenv("TELEGRAM_IMG_URL", "https://i.postimg.cc/mDTTvtxS/20260214-163714.jpg")
-
-# ── HESABLAMALAR ──────────────────────────────────────
-def time_to_seconds(time):
-    stringt = str(time)
-    return sum(int(x) * 60**i for i, x in enumerate(reversed(stringt.split(":"))))
-
-DURATION_LIMIT = int(time_to_seconds(f"{DURATION_LIMIT_MIN}:00"))
-
-# ── FİLTRLƏR ─────────────────────────────────────────
-BANNED_USERS = filters.user()
-adminlist    = {}
+    # Şəkil işləyir, stiker yoxdur
+    try:
+        await client.send_photo(
+            chat_id=message.chat.id, 
+            photo=START_PIC,
+            caption=caption, 
+            reply_markup=keyboard
+        )
+    except:
+        await client.send_message(
+            chat_id=message.chat.id, 
+            text=caption, 
+            reply_markup=keyboard
+        )
