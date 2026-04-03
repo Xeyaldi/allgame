@@ -1,6 +1,5 @@
 pyrogram==2.0.106
 TgCrypto
-pytgcalls==4.0.0
 yt-dlp
 requests
 psycopg2-binary
@@ -9,3 +8,4 @@ python-dotenv
 openai==0.28.1
 wikipedia
 python-dotenv
+pytgcalls
