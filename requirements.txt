@@ -1,11 +1,10 @@
-pyrogram==2.0.106
-TgCrypto
+pyrogram
+tgcrypto
 yt-dlp
 requests
 psycopg2-binary
 motor
 python-dotenv
-openai==0.28.1
+openai
 wikipedia
-python-dotenv
 pytgcalls
