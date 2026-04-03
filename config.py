@@ -55,7 +55,7 @@ async def start_cmd(client, message):
                               url=f"https://t.me/{bot_me.username}?startgroup=true")],
         [InlineKeyboardButton("👨‍💻 Sahibi",  url=OWNER_LINK),
          InlineKeyboardButton("📢 Kanal",   url=CHANNEL_LINK)],
-        [InlineKeyboardButton("💬 Dəstək Qrupu", url=SUPPORT_LINK)],
+        [InlineKeyboardButton("💬 Dəstək Qrupu", url=SUPPORT_CHAT)],
     ])
 
     # Şəkil işləyir, stiker yoxdur
